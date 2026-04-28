@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Catamaran Estudio — Planificador</title>
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-tertiary: #eeece6;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6a65;
+    --text-tertiary: #9e9d98;
+    --border-light: rgba(0,0,0,0.1);
+    --border-mid: rgba(0,0,0,0.18);
+    --border-strong: rgba(0,0,0,0.28);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --accent: #7F77DD;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #2a2a27;
+      --bg-tertiary: #333330;
+      --text-primary: #f0ede6;
+      --text-secondary: #a09e98;
+      --text-tertiary: #6b6a65;
+      --border-light: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+      --border-strong: rgba(255,255,255,0.22);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-tertiary); color: var(--text-primary); min-height: 100vh; }
+  header { background: var(--bg-primary); border-bottom: 0.5px solid var(--border-mid); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 16px; font-weight: 500; color: var(--text-primary); }
+  header span { font-size: 12px; color: var(--text-secondary); }
+  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 7px 14px; border-radius: var(--radius-md); border: 0.5px solid var(--border-mid); font-size: 12px; cursor: pointer; background: transparent; color: var(--text-secondary); transition: all 0.15s; }
+  .tab.active { background: var(--bg-primary); color: var(--text-primary); border-color: var(--border-strong); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .tab:hover:not(.active) { background: var(--bg-secondary); }
+  .panel { background: var(--bg-secondary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem; margin-bottom: 1.25rem; }
+  .panel h3 { font-size: 13px; font-weight: 500; margin-bottom: 10px; color: var(--text-primary); }
+  .form-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; }
+  .form-col { display: flex; flex-direction: column; gap: 3px; }
+  .form-label { font-size: 11px; color: var(--text-secondary); }
+  select, input[type=text], input[type=number], input[type=date] {
+    font-size: 12px; height: 32px; padding: 0 8px;
+    border: 0.5px solid var(--border-mid); border-radius: var(--radius-md);
+    background: var(--bg-primary); color: var(--text-primary);
+    outline: none;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+  textarea {
+    font-size: 12px; padding: 6px 8px; resize: vertical; min-height: 55px;
+    border: 0.5px solid var(--border-mid); border-radius: var(--radius-md);
+    background: var(--bg-primary); color: var(--text-primary); outline: none;
+    font-family: inherit;
+  }
+  textarea:focus { border-color: var(--accent); }
+  button {
+    height: 32px; font-size: 12px; padding: 0 14px; cursor: pointer;
+    border: 0.5px solid var(--border-mid); border-radius: var(--radius-md);
+    background: var(--bg-primary); color: var(--text-primary);
+    transition: all 0.15s; font-family: inherit; white-space: nowrap;
+  }
+  button:hover { background: var(--bg-secondary); }
+  button:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { opacity: 0.9; background: var(--accent); }
+  .stats-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1.25rem; }
+  .stat-card { background: var(--bg-primary); border-radius: var(--radius-md); padding: 10px 14px; border: 0.5px solid var(--border-light); }
+  .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
+  .stat-val { font-size: 22px; font-weight: 500; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px; }
+  .day-col { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 8px 6px; min-height: 280px; }
+  .day-header { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: center; margin-bottom: 4px; padding-bottom: 5px; border-bottom: 0.5px solid var(--border-light); }
+  .day-date { font-size: 10px; color: var(--text-tertiary); text-align: center; margin-bottom: 6px; }
+  .task-slot { font-size: 10px; border-radius: 4px; padding: 4px 5px; margin-bottom: 4px; line-height: 1.4; }
+  .task-slot.span-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .task-slot.span-mid { border-radius: 0; opacity: 0.8; }
+  .task-slot.span-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .task-meta { font-size: 9px; opacity: 0.65; margin-top: 2px; }
+  .task-deadline { font-size: 9px; margin-top: 1px; }
+  .task-actions { display: flex; gap: 3px; margin-top: 4px; }
+  .task-btn { height: auto; font-size: 9px; padding: 1px 5px; border-radius: 3px; }
+  .add-btn { width: 100%; padding: 4px; font-size: 10px; border: 0.5px dashed var(--border-mid); border-radius: 4px; background: none; color: var(--text-tertiary); cursor: pointer; margin-top: 4px; height: auto; }
+  .add-btn:hover { background: var(--bg-secondary); color: var(--text-secondary); }
+  .cat-produccion { background: #EEEDFE; color: #3C3489; }
+  .cat-tercerizados { background: #FAEEDA; color: #633806; }
+  .cat-diseno { background: #E1F5EE; color: #085041; }
+  .cat-moldes { background: #FAECE7; color: #712B13; }
+  .cat-fotos { background: #FBEAF0; color: #72243E; }
+  .cat-redes { background: #EAF3DE; color: #3B6D11; }
+  .cat-admin { background: #E6F1FB; color: #0C447C; }
+  .cat-externo { background: #F1EFE8; color: #444441; }
+  .checklist-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 1rem; }
+  .checklist-card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem; }
+  .checklist-card h3 { font-size: 12px; font-weight: 500; border-radius: 4px; padding: 4px 8px; display: inline-block; margin-bottom: 8px; }
+  .check-item { display: flex; align-items: flex-start; gap: 7px; padding: 5px 0; border-bottom: 0.5px solid var(--border-light); font-size: 11px; color: var(--text-secondary); }
+  .check-item:last-child { border-bottom: none; }
+  .check-item input[type=checkbox] { margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; }
+  .check-item.done span { text-decoration: line-through; color: var(--text-tertiary); }
+  .badge-quien { font-size: 9px; background: var(--bg-secondary); border-radius: 3px; padding: 1px 4px; color: var(--text-tertiary); margin-left: auto; flex-shrink: 0; }
+  .progress-bar { height: 3px; background: var(--bg-secondary); border-radius: 2px; margin-bottom: 8px; }
+  .progress-fill { height: 3px; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border-mid); }
+  td { padding: 8px 10px; border-bottom: 0.5px solid var(--border-light); color: var(--text-primary); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-secondary); }
+  .table-wrap { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow: auto; }
+  .stock-ok { color: #3B6D11; font-weight: 500; }
+  .stock-low { color: #854F0B; font-weight: 500; }
+  .stock-out { color: #A32D2D; font-weight: 500; }
+  .days-ok { color: #3B6D11; font-size: 10px; }
+  .days-warn { color: #854F0B; font-size: 10px; }
+  .days-due { color: #A32D2D; font-size: 10px; }
+  .month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .month-hdr { font-size: 10px; font-weight: 500; text-align: center; color: var(--text-secondary); padding: 4px 0; }
+  .month-day { min-height: 64px; background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: 5px; padding: 4px; }
+  .month-day.empty { background: transparent; border-color: transparent; }
+  .mday-num { font-size: 10px; color: var(--text-secondary); margin-bottom: 2px; }
+  .month-task { font-size: 9px; border-radius: 2px; padding: 1px 3px; margin-bottom: 2px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg-primary); border: 0.5px solid var(--border-mid); border-radius: var(--radius-lg); padding: 1.5rem; width: 100%; max-width: 420px; }
+  .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 14px; }
+  .modal label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; margin-top: 12px; }
+  .modal input, .modal textarea, .modal select { width: 100%; }
+  .modal-btns { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .toggle-row label { font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+  @media (max-width: 700px) {
+    .week-grid { grid-template-columns: repeat(3,1fr); }
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+  }
+  @media (max-width: 480px) {
+    .week-grid { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="width:32px;height:32px;border-radius:8px;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:14px;color:#3C3489;font-weight:500;">C</div>
+  <div>
+    <h1>Catamaran Estudio</h1>
+    <span>Planificador de actividades</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('semana')">Semana</button>
+    <button class="tab" onclick="switchTab('mes')">Mes</button>
+    <button class="tab" onclick="switchTab('checklists')">Checklists</button>
+    <button class="tab" onclick="switchTab('inventario')">Inventario</button>
+    <button class="tab" onclick="switchTab('entregas')">Entregas</button>
+  </div>
+
+  <div id="tab-semana">
+    <div class="stats-bar" id="stats-bar"></div>
+    <div class="panel">
+      <h3>Agregar actividad</h3>
+      <div class="toggle-row">
+        <input type="checkbox" id="toggle-span" onchange="toggleSpanMode()" style="accent-color:var(--accent);width:14px;height:14px;" />
+        <label for="toggle-span">Tarea de varios días</label>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <span class="form-label" id="label-dia-inicio">Día</span>
+          <select id="sel-dia" style="min-width:110px;">
+            <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option>
+            <option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
+          </select>
+        </div>
+        <div class="form-col" id="wrap-dia-fin" style="display:none;">
+          <span class="form-label">Día fin</span>
+          <select id="sel-dia-fin" style="min-width:110px;">
+            <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option>
+            <option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
+          </select>
+        </div>
+        <select id="sel-cat" style="min-width:130px;">
+          <option value="cat-produccion">Producción</option>
+          <option value="cat-tercerizados">Tercerizado</option>
+          <option value="cat-diseno">Diseño</option>
+          <option value="cat-moldes">Moldes</option>
+          <option value="cat-fotos">Fotografía</option>
+          <option value="cat-redes">Redes sociales</option>
+          <option value="cat-admin">Ventas / Admin</option>
+          <option value="cat-externo">Actividad externa</option>
+        </select>
+        <select id="sel-quien" style="min-width:110px;">
+          <option value="">Ambos</option><option value="Martín">Martín</option>
+          <option value="Yo">Yo</option><option value="Bitácora">Bitácora</option><option value="Angélica">Angélica</option>
+        </select>
+        <input id="inp-task" type="text" placeholder="Actividad..." style="flex:2;min-width:130px;" />
+        <input id="inp-hora" type="text" placeholder="Hora" style="max-width:70px;" />
+        <input id="inp-deadline" type="date" style="max-width:150px;" />
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <textarea id="inp-nota" placeholder="Nota opcional..." style="flex:1;"></textarea>
+        <button class="btn-primary" onclick="addTask()">+ Agregar</button>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#EEEDFE;"></div>Producción</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FAEEDA;"></div>Tercerizado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E1F5EE;"></div>Diseño</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FAECE7;"></div>Moldes</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FBEAF0;"></div>Fotografía</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EAF3DE;"></div>Redes</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E6F1FB;"></div>Admin</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F1EFE8;"></div>Externo</div>
+    </div>
+    <div class="week-grid" id="week-grid"></div>
+  </div>
+
+  <div id="tab-mes" style="display:none;">
+    <div class="panel">
+      <h3>Agregar al mes</h3>
+      <div class="form-row">
+        <input id="inp-mes-dia" type="number" min="1" max="31" placeholder="Día inicio" style="max-width:90px;" />
+        <input id="inp-mes-dia-fin" type="number" min="1" max="31" placeholder="Día fin (opc.)" style="max-width:110px;" />
+        <select id="sel-mes-cat" style="min-width:130px;">
+          <option value="cat-produccion">Producción</option><option value="cat-tercerizados">Tercerizado</option>
+          <option value="cat-diseno">Diseño</option><option value="cat-moldes">Moldes</option>
+          <option value="cat-fotos">Fotografía</option><option value="cat-redes">Redes sociales</option>
+          <option value="cat-admin">Ventas / Admin</option><option value="cat-externo">Actividad externa</option>
+        </select>
+        <input id="inp-mes-task" type="text" placeholder="Actividad..." style="flex:1;" />
+        <button class="btn-primary" onclick="addMonthTask()">+ Agregar</button>
+      </div>
+    </div>
+    <div class="month-grid" id="month-view"></div>
+  </div>
+
+  <div id="tab-checklists" style="display:none;">
+    <div class="checklist-grid" id="checklist-view"></div>
+  </div>
+
+  <div id="tab-inventario" style="display:none;">
+    <div class="panel">
+      <h3>Agregar / actualizar material</h3>
+      <div class="form-row">
+        <input id="inv-nombre" type="text" placeholder="Material o insumo..." style="flex:2;" />
+        <input id="inv-stock" type="number" placeholder="Cant." style="max-width:70px;" />
+        <input id="inv-unidad" type="text" placeholder="Unidad" style="max-width:80px;" />
+        <input id="inv-minimo" type="number" placeholder="Mín." style="max-width:70px;" />
+        <input id="inv-nota" type="text" placeholder="Nota / proveedor..." style="flex:1;" />
+        <button class="btn-primary" onclick="addInvItem()">+ Agregar</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Material</th><th>Stock</th><th>Unidad</th><th>Mínimo</th><th>Estado</th><th>Nota</th><th></th></tr></thead><tbody id="inv-body"></tbody></table>
+    </div>
+  </div>
+
+  <div id="tab-entregas" style="display:none;">
+    <div class="panel">
+      <h3>Nueva entrega / pedido</h3>
+      <div class="form-row">
+        <input id="del-cliente" type="text" placeholder="Cliente..." style="flex:1;" />
+        <input id="del-producto" type="text" placeholder="Producto / pedido..." style="flex:2;" />
+        <input id="del-cant" type="number" placeholder="Cant." style="max-width:65px;" />
+        <input id="del-fecha" type="date" style="max-width:150px;" />
+        <select id="del-status" style="min-width:120px;">
+          <option value="s-pendiente">Pendiente</option><option value="s-proceso">En proceso</option>
+          <option value="s-listo">Listo</option><option value="s-enviado">Enviado</option>
+        </select>
+        <button class="btn-primary" onclick="addDelivery()">+ Agregar</button>
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <textarea id="del-nota" placeholder="Notas del pedido (acabado, color, empaque...)..." style="flex:1;min-height:50px;"></textarea>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table style="table-layout:fixed;">
+        <thead><tr>
+          <th style="width:14%">Cliente</th><th style="width:20%">Producto</th><th style="width:7%">Cant.</th>
+          <th style="width:12%">Entrega</th><th style="width:9%">Días</th><th style="width:13%">Estado</th>
+          <th style="width:19%">Nota</th><th style="width:6%"></th>
+        </tr></thead>
+        <tbody id="del-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h3 id="modal-title">Detalle de actividad</h3>
+    <label>Nota</label>
+    <textarea id="modal-nota" rows="4"></textarea>
+    <label>Fecha límite</label>
+    <input id="modal-deadline" type="date" />
+    <label>Asignado a</label>
+    <select id="modal-quien">
+      <option value="">Ambos</option><option value="Martín">Martín</option>
+      <option value="Yo">Yo</option><option value="Bitácora">Bitácora</option><option value="Angélica">Angélica</option>
+    </select>
+    <div class="modal-btns">
+      <button onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MONTH_DAYS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const CHECKLISTS={
+  'Latas cerámicas':{cat:'cat-produccion',steps:[
+    {label:'Corte de piezas',quien:''},{label:'Ensamblado',quien:''},{label:'Pulido 1',quien:''},
+    {label:'Secado 1',quien:''},{label:'Engobado',quien:''},{label:'Secado 2',quien:''},
+    {label:'Quema de bizcocho',quien:'Bitácora'},{label:'Esmaltado',quien:''},{label:'Pulido 2',quien:''},
+    {label:'Segunda quema (baja T)',quien:'Bitácora'},{label:'Empaque',quien:''},{label:'Envío',quien:''}
+  ]},
+  'Floreros':{cat:'cat-produccion',steps:[
+    {label:'Vaciado de piezas',quien:''},{label:'Pulido 1',quien:''},{label:'Secado 1',quien:''},
+    {label:'Pulido 2',quien:''},{label:'Secado 2',quien:''},{label:'Quema de bizcocho',quien:'Bitácora'},
+    {label:'Esmaltado',quien:''},{label:'Terminado',quien:''},{label:'Segunda quema (alta T)',quien:'Angélica'},
+    {label:'Empaque',quien:''},{label:'Envío',quien:''}
+  ]},
+  'Diseño nuevo producto':{cat:'cat-diseno',steps:[
+    {label:'Definir forma / concepto',quien:''},{label:'Bocetos y referencias',quien:''},
+    {label:'Moldes en yeso o patrones',quien:''},{label:'Definir acabados',quien:''},
+    {label:'Prototipo',quien:''},{label:'Revisión y ajustes',quien:''}
+  ]},
+  'Moldes en yeso':{cat:'cat-moldes',steps:[
+    {label:'Diseño 3D',quien:''},{label:'Impresión 3D del positivo',quien:''},
+    {label:'Vaciado del yeso',quien:''},{label:'Secado del molde',quien:''},
+    {label:'Prueba de vaciado',quien:''}
+  ]},
+  'Fotografía catálogo':{cat:'cat-fotos',steps:[
+    {label:'Selección de piezas',quien:''},{label:'Preparar set y fondo',quien:''},
+    {label:'Sesión fotográfica',quien:''},{label:'Selección de fotos',quien:''},
+    {label:'Edición básica',quien:''},{label:'Exportar para redes/catálogo',quien:''}
+  ]}
+};
+
+let weekTasks=DAYS.map(()=>[]);
+let monthTasks={};
+let checkState={};
+let invItems=[
+  {nombre:'Engobe',stock:2,unidad:'kg',minimo:1,nota:''},
+  {nombre:'Esmalte transparente',stock:0.5,unidad:'kg',minimo:1,nota:'Reabastecer'},
+  {nombre:'Yeso',stock:5,unidad:'kg',minimo:3,nota:''},
+  {nombre:'Papel de empaque',stock:30,unidad:'und',minimo:10,nota:''}
+];
+let deliveries=[];
+let editingModal=null;
+let spanMode=false;
+
+Object.keys(CHECKLISTS).forEach(n=>{checkState[n]=CHECKLISTS[n].steps.map(()=>false);});
+
+function toggleSpanMode(){
+  spanMode=document.getElementById('toggle-span').checked;
+  document.getElementById('wrap-dia-fin').style.display=spanMode?'flex':'none';
+  document.getElementById('label-dia-inicio').textContent=spanMode?'Día inicio':'Día';
+}
+
+function addTask(){
+  const diaInicio=parseInt(document.getElementById('sel-dia').value);
+  const diaFin=spanMode?parseInt(document.getElementById('sel-dia-fin').value):diaInicio;
+  const cat=document.getElementById('sel-cat').value;
+  const quien=document.getElementById('sel-quien').value;
+  const text=document.getElementById('inp-task').value.trim();
+  const hora=document.getElementById('inp-hora').value.trim();
+  const deadline=document.getElementById('inp-deadline').value;
+  const nota=document.getElementById('inp-nota').value.trim();
+  if(!text)return;
+  const fin=Math.max(diaInicio,diaFin);
+  const inicio=Math.min(diaInicio,diaFin);
+  const taskId='t'+Date.now();
+  for(let d=inicio;d<=fin;d++){
+    weekTasks[d].push({id:taskId,cat,text,quien,hora,deadline,nota,
+      spanStart:d===inicio,spanEnd:d===fin,isSpan:inicio!==fin,spanLen:fin-inicio+1});
+  }
+  document.getElementById('inp-task').value='';
+  document.getElementById('inp-hora').value='';
+  document.getElementById('inp-deadline').value='';
+  document.getElementById('inp-nota').value='';
+  renderWeek();
+}
+
+function removeTask(taskId){
+  for(let d=0;d<7;d++) weekTasks[d]=weekTasks[d].filter(t=>t.id!==taskId);
+  renderWeek();
+}
+
+function openModal(taskId){
+  let found=null;
+  for(let d=0;d<7;d++){const t=weekTasks[d].find(t=>t.id===taskId);if(t){found=t;break;}}
+  if(!found)return;
+  editingModal=taskId;
+  document.getElementById('modal-title').textContent=found.text;
+  document.getElementById('modal-nota').value=found.nota||'';
+  document.getElementById('modal-deadline').value=found.deadline||'';
+  document.getElementById('modal-quien').value=found.quien||'';
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('task-modal').classList.remove('open');editingModal=null;}
+
+function saveModal(){
+  if(!editingModal)return;
+  for(let d=0;d<7;d++) weekTasks[d].forEach(t=>{
+    if(t.id===editingModal){
+      t.nota=document.getElementById('modal-nota').value.trim();
+      t.deadline=document.getElementById('modal-deadline').value;
+      t.quien=document.getElementById('modal-quien').value;
+    }
+  });
+  closeModal(); renderWeek();
+}
+
+function daysLeft(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr);d.setHours(0,0,0,0);
+  const now=new Date();now.setHours(0,0,0,0);
+  return Math.round((d-now)/(1000*60*60*24));
+}
+
+function daysLeftLabel(n){
+  if(n===null)return '';
+  if(n<0)return `<span class="days-due">${Math.abs(n)}d vencido</span>`;
+  if(n===0)return `<span class="days-due">Hoy</span>`;
+  if(n<=3)return `<span class="days-warn">${n}d</span>`;
+  return `<span class="days-ok">${n}d</span>`;
+}
+
+function renderWeek(){
+  const grid=document.getElementById('week-grid');
+  const today=new Date();
+  const dow=today.getDay();
+  const monday=new Date(today);
+  monday.setDate(today.getDate()-(dow===0?6:dow-1));
+  grid.innerHTML=DAYS.map((day,i)=>{
+    const d=new Date(monday);
+    d.setDate(monday.getDate()+(i<6?i:i+1));
+    const tasks=weekTasks[i];
+    const dateStr=d.getDate()+'/'+(d.getMonth()+1);
+    const isDom=i===6;
+    return `<div class="day-col">
+      <div class="day-header" style="${isDom?'opacity:0.6;':''}">${day}</div>
+      <div class="day-date">${dateStr}</div>
+      ${tasks.map(t=>{
+        const dl=daysLeft(t.deadline);
+        const dlLabel=daysLeftLabel(dl);
+        let spanClass='';
+        if(t.isSpan){
+          if(t.spanStart&&!t.spanEnd)spanClass='span-start';
+          else if(t.spanEnd&&!t.spanStart)spanClass='span-end';
+          else if(!t.spanStart&&!t.spanEnd)spanClass='span-mid';
+        }
+        const showFull=!t.isSpan||t.spanStart;
+        return `<div class="task-slot ${t.cat} ${spanClass}">
+          ${t.hora&&showFull?`<span style="opacity:0.6;font-size:9px;">${t.hora} </span>`:''}
+          ${showFull?t.text:`<span style="font-size:9px;opacity:0.55;font-style:italic;">↳ continúa</span>`}
+          ${t.quien&&showFull?`<div class="task-meta">${t.quien}</div>`:''}
+          ${t.deadline&&showFull?`<div class="task-deadline">${dlLabel} · ${t.deadline.slice(5).replace('-','/')}</div>`:''}
+          ${t.nota&&showFull?`<div class="task-meta" style="font-style:italic;">${t.nota.length>30?t.nota.slice(0,30)+'...':t.nota}</div>`:''}
+          ${t.isSpan&&t.spanStart?`<div class="task-meta">${t.spanLen} días</div>`:''}
+          ${showFull?`<div class="task-actions">
+            <button class="task-btn" onclick="openModal('${t.id}')">editar</button>
+            <button class="task-btn" onclick="removeTask('${t.id}')">quitar</button>
+          </div>`:''}
+        </div>`;
+      }).join('')}
+      <button class="add-btn" onclick="quickAdd(${i})">+ tarea</button>
+    </div>`;
+  }).join('');
+  renderStats();
+}
+
+function quickAdd(dia){
+  document.getElementById('sel-dia').value=dia;
+  if(spanMode)document.getElementById('sel-dia-fin').value=dia;
+  document.getElementById('inp-task').focus();
+}
+
+function renderStats(){
+  const all=weekTasks.flat();
+  const unique=s=>new Set(s.map(t=>t.id)).size;
+  document.getElementById('stats-bar').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total semana</div><div class="stat-val">${unique(all)}</div></div>
+    <div class="stat-card"><div class="stat-label">Producción</div><div class="stat-val">${unique(all.filter(t=>t.cat==='cat-produccion'))}</div></div>
+    <div class="stat-card"><div class="stat-label">Externos</div><div class="stat-val">${unique(all.filter(t=>t.cat==='cat-externo'))}</div></div>
+    <div class="stat-card"><div class="stat-label">Con fecha límite</div><div class="stat-val">${unique(all.filter(t=>t.deadline))}</div></div>`;
+}
+
+function addMonthTask(){
+  const dia=parseInt(document.getElementById('inp-mes-dia').value);
+  const diaFin=parseInt(document.getElementById('inp-mes-dia-fin').value)||dia;
+  const cat=document.getElementById('sel-mes-cat').value;
+  const text=document.getElementById('inp-mes-task').value.trim();
+  if(!text||!dia||dia<1||dia>31)return;
+  const fin=Math.max(dia,diaFin);
+  for(let d=Math.min(dia,diaFin);d<=fin;d++){
+    if(!monthTasks[d])monthTasks[d]=[];
+    monthTasks[d].push({cat,text,isStart:d===dia,isEnd:d===fin});
+  }
+  document.getElementById('inp-mes-task').value='';
+  document.getElementById('inp-mes-dia').value='';
+  document.getElementById('inp-mes-dia-fin').value='';
+  renderMonth();
+}
+
+function renderMonth(){
+  const view=document.getElementById('month-view');
+  const now=new Date();
+  const year=now.getFullYear();const month=now.getMonth();
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const offset=(firstDay+6)%7;
+  let html=MONTH_DAYS.map(d=>`<div class="month-hdr">${d}</div>`).join('');
+  for(let i=0;i<offset;i++)html+=`<div class="month-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const tasks=monthTasks[d]||[];
+    const isToday=d===now.getDate();
+    html+=`<div class="month-day" style="${isToday?'border-color:var(--accent);':''}">
+      <div class="mday-num" style="${isToday?'color:var(--accent);font-weight:500;':''}">${d}</div>
+      ${tasks.map(t=>`<div class="month-task ${t.cat}">${t.isStart?t.text:(t.isEnd?'↳ fin':'↳')}</div>`).join('')}
+    </div>`;
+  }
+  view.innerHTML=html;
+}
+
+function renderChecklists(){
+  const view=document.getElementById('checklist-view');
+  view.innerHTML=Object.entries(CHECKLISTS).map(([name,cl])=>{
+    const done=checkState[name].filter(Boolean).length;
+    const total=cl.steps.length;
+    const pct=Math.round((done/total)*100);
+    return `<div class="checklist-card">
+      <h3 class="${cl.cat}">${name}</h3>
+      <div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">${done}/${total} · ${pct}%</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      ${cl.steps.map((step,idx)=>`
+        <div class="check-item ${checkState[name][idx]?'done':''}">
+          <input type="checkbox" ${checkState[name][idx]?'checked':''} onchange="toggleCheck('${name}',${idx})"/>
+          <span>${step.label}</span>
+          ${step.quien?`<span class="badge-quien">${step.quien}</span>`:''}
+        </div>`).join('')}
+      <button style="margin-top:8px;font-size:11px;width:100%;padding:5px;" onclick="resetCheck('${name}')">↺ Resetear</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleCheck(name,idx){checkState[name][idx]=!checkState[name][idx];renderChecklists();}
+function resetCheck(name){checkState[name]=CHECKLISTS[name].steps.map(()=>false);renderChecklists();}
+
+function addInvItem(){
+  const nombre=document.getElementById('inv-nombre').value.trim();
+  const stock=parseFloat(document.getElementById('inv-stock').value)||0;
+  const unidad=document.getElementById('inv-unidad').value.trim()||'und';
+  const minimo=parseFloat(document.getElementById('inv-minimo').value)||0;
+  const nota=document.getElementById('inv-nota').value.trim();
+  if(!nombre)return;
+  const ei=invItems.findIndex(i=>i.nombre.toLowerCase()===nombre.toLowerCase());
+  if(ei>=0)invItems[ei]={nombre,stock,unidad,minimo,nota};
+  else invItems.push({nombre,stock,unidad,minimo,nota});
+  ['inv-nombre','inv-stock','inv-unidad','inv-minimo','inv-nota'].forEach(id=>document.getElementById(id).value='');
+  renderInventario();
+}
+
+function removeInv(idx){invItems.splice(idx,1);renderInventario();}
+function updateStock(idx,val){invItems[idx].stock=parseFloat(val)||0;renderInventario();}
+
+function renderInventario(){
+  const tbody=document.getElementById('inv-body');
+  if(!invItems.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--text-tertiary);padding:24px;">Sin materiales registrados</td></tr>`;return;}
+  tbody.innerHTML=invItems.map((item,idx)=>{
+    let sc,sl;
+    if(item.stock<=0){sc='stock-out';sl='Sin stock';}
+    else if(item.stock<item.minimo){sc='stock-low';sl='Stock bajo';}
+    else{sc='stock-ok';sl='OK';}
+    return `<tr>
+      <td style="font-weight:500;">${item.nombre}</td>
+      <td><input type="number" value="${item.stock}" step="0.1" style="width:65px;font-size:11px;height:28px;padding:0 6px;" onchange="updateStock(${idx},this.value)"/></td>
+      <td>${item.unidad}</td>
+      <td>${item.minimo} ${item.unidad}</td>
+      <td><span class="${sc}">${sl}</span></td>
+      <td style="color:var(--text-secondary);font-size:11px;">${item.nota||'—'}</td>
+      <td><button style="font-size:10px;padding:2px 8px;height:auto;" onclick="removeInv(${idx})">quitar</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function addDelivery(){
+  const cliente=document.getElementById('del-cliente').value.trim();
+  const producto=document.getElementById('del-producto').value.trim();
+  const cant=parseInt(document.getElementById('del-cant').value)||1;
+  const fecha=document.getElementById('del-fecha').value;
+  const status=document.getElementById('del-status').value;
+  const nota=document.getElementById('del-nota').value.trim();
+  if(!cliente||!producto)return;
+  deliveries.push({cliente,producto,cant,fecha,status,nota});
+  ['del-cliente','del-producto','del-cant','del-fecha','del-nota'].forEach(id=>document.getElementById(id).value='');
+  renderEntregas();
+}
+
+function removeDelivery(idx){deliveries.splice(idx,1);renderEntregas();}
+function updateDeliveryStatus(idx,val){deliveries[idx].status=val;renderEntregas();}
+
+function renderEntregas(){
+  const tbody=document.getElementById('del-body');
+  if(!deliveries.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--text-tertiary);padding:24px;">Sin entregas registradas</td></tr>`;return;}
+  const sorted=[...deliveries].map((d,i)=>({...d,_idx:i})).sort((a,b)=>{
+    if(!a.fecha)return 1;if(!b.fecha)return -1;return new Date(a.fecha)-new Date(b.fecha);
+  });
+  tbody.innerHTML=sorted.map(item=>{
+    const dl=daysLeft(item.fecha);
+    const dlLabel=item.fecha?daysLeftLabel(dl):`<span style="color:var(--text-tertiary);font-size:10px;">—</span>`;
+    const fechaLabel=item.fecha?item.fecha.slice(5).replace('-','/'):'—';
+    return `<tr>
+      <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;">${item.cliente}</td>
+      <td style="overflow:hidden;text-overflow:ellipsis;">${item.producto}</td>
+      <td style="text-align:center;">${item.cant}</td>
+      <td>${fechaLabel}</td>
+      <td>${dlLabel}</td>
+      <td><select style="font-size:11px;height:26px;padding:0 4px;" onchange="updateDeliveryStatus(${item._idx},this.value)">
+        ${['s-pendiente','s-proceso','s-listo','s-enviado'].map(s=>`<option value="${s}" ${item.status===s?'selected':''}>${s.replace('s-','')}</option>`).join('')}
+      </select></td>
+      <td style="font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;">${item.nota||'—'}</td>
+      <td><button style="font-size:10px;padding:2px 8px;height:auto;" onclick="removeDelivery(${item._idx})">quitar</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function switchTab(tab){
+  ['semana','mes','checklists','inventario','entregas'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['semana','mes','checklists','inventario','entregas'][i]===tab);
+  });
+  if(tab==='mes')renderMonth();
+  if(tab==='checklists')renderChecklists();
+  if(tab==='inventario')renderInventario();
+  if(tab==='entregas')renderEntregas();
+}
+
+document.getElementById('task-modal').addEventListener('click',function(e){
+  if(e.target===this)closeModal();
+});
+
+renderWeek();
+</script>
+</body>
+</html>
